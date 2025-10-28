@@ -136,9 +136,22 @@ nlohmann::json AlpacaClient::orderToAlpacaJson(const Order& order) {
     j["symbol"] = order.symbol;
     j["qty"] = std::to_string(static_cast<int>(order.quantity));
     j["side"] = (order.side == Side::BUY) ? "buy" : "sell";
-    j["type"] = "limit";
-    j["time_in_force"] = "day";
-    j["limit_price"] = std::to_string(order.price);
+    
+    // Set order type based on the order's type
+    if (order.order_type == OrderType::MARKET) {
+        j["type"] = "market";
+        j["time_in_force"] = "day";
+        // Market orders don't need limit_price
+    } else if (order.order_type == OrderType::LIMIT) {
+        j["type"] = "limit";
+        j["time_in_force"] = "day";
+        j["limit_price"] = std::to_string(order.price);
+    } else if (order.order_type == OrderType::STOP) {
+        j["type"] = "stop";
+        j["time_in_force"] = "day";
+        j["stop_price"] = std::to_string(order.price);
+    }
+    
     j["client_order_id"] = order.client_order_id;
     
     return j;
@@ -206,6 +219,11 @@ ExecutionReport AlpacaClient::alpacaJsonToExecutionReport(const nlohmann::json& 
 
 ExecutionReport AlpacaClient::submitOrder(const Order& order) {
     nlohmann::json order_json = orderToAlpacaJson(order);
+    
+    // Debug: log the JSON being sent to Alpaca
+    std::cout << "🔍 Submitting order to Alpaca:" << std::endl;
+    std::cout << "   Order JSON: " << order_json.dump(2) << std::endl;
+    
     std::string response = httpPost("/v2/orders", order_json.dump());
     
     try {
@@ -213,6 +231,7 @@ ExecutionReport AlpacaClient::submitOrder(const Order& order) {
         
         // Check for error response
         if (response_json.contains("message")) {
+            std::cout << "❌ Alpaca rejected order: " << response_json["message"] << std::endl;
             ExecutionReport report;
             report.order_id = "";
             report.client_order_id = order.client_order_id;
