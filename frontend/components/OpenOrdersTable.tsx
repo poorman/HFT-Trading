@@ -69,7 +69,11 @@ export default function OpenOrdersTable({ orders, onCancelOrder }: OpenOrdersTab
                     <div>
                       <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Qty @ Price</p>
                       <p className="text-white font-semibold">
-                        {order.quantity || order.qty} @ ${Number(order.price || order.limit_price || 0).toFixed(2)}
+                        {order.quantity || order.qty} @ {
+                          (order.order_type?.toLowerCase() === 'market' || order.type?.toLowerCase() === 'market')
+                            ? <span className="text-cyan-400 font-bold">MARKET</span>
+                            : `$${Number(order.price || order.limit_price || 0).toFixed(2)}`
+                        }
                       </p>
                     </div>
 
