@@ -254,11 +254,72 @@ docker-compose up -d
 - Verify API_URL environment variable
 - Check CORS configuration
 
+## Integrations
+
+### Linear Integration
+The system integrates with [Linear](https://linear.app/) for project management and issue tracking:
+
+- **Automatic Issue Creation**: Bugs, features, and performance issues are automatically created in Linear
+- **Component-based Organization**: Issues are organized by component (Engine, Backend, Frontend, Risk)
+- **Priority Management**: High-priority issues are automatically flagged
+- **MCP Support**: Compatible with Linear's Model Context Protocol for AI assistants
+
+**Setup:**
+1. Create a Linear workspace
+2. Generate API keys in Linear settings
+3. Configure environment variables:
+   ```bash
+   LINEAR_API_KEY=your_linear_api_key
+   LINEAR_TEAM_ID=your_team_id
+   LINEAR_PROJECT_ID=your_project_id
+   ```
+
+### Slack Integration
+Real-time notifications and alerts via Slack:
+
+- **Trading Alerts**: Order executions and position changes
+- **Risk Management**: Risk threshold breaches and circuit breaker activations
+- **System Status**: Health monitoring and performance alerts
+- **Daily Summaries**: End-of-day trading reports
+
+**Setup:**
+1. Create a Slack app and webhook
+2. Configure environment variables:
+   ```bash
+   SLACK_WEBHOOK_URL=your_slack_webhook_url
+   SLACK_CHANNEL=#trading-alerts
+   ```
+
+### GitHub Integration
+The repository is designed for seamless GitHub integration:
+
+- **CI/CD Pipeline**: Automated testing and deployment
+- **Issue Tracking**: Integration with Linear for issue management
+- **Code Quality**: Automated linting and testing
+- **Documentation**: Comprehensive README and API documentation
+
+## Environment Configuration
+
+Copy `env.template` to `.env` and configure your environment:
+
+```bash
+cp env.template .env
+# Edit .env with your actual values
+```
+
+Required environment variables:
+- `ALPACA_API_KEY` - Alpaca trading API key
+- `ALPACA_API_SECRET` - Alpaca trading API secret
+- `POLYGON_API_KEY` - Polygon market data API key
+- `DATABASE_URL` - PostgreSQL connection string
+- `LINEAR_API_KEY` - Linear API key (optional)
+- `SLACK_WEBHOOK_URL` - Slack webhook URL (optional)
+
 ## License
 
 Proprietary - All rights reserved
 
 ## Support
 
-For questions or issues, contact the development team.
+For questions or issues, contact the development team or create an issue in Linear.
 

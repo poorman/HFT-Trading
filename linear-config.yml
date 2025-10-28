@@ -1,0 +1,42 @@
+# Linear Integration Configuration
+# This file contains configuration for integrating HFT Trading with Linear
+
+# Linear API Configuration
+LINEAR_API_KEY=your_linear_api_key_here
+LINEAR_TEAM_ID=your_team_id_here
+LINEAR_PROJECT_ID=your_project_id_here
+
+# Linear Webhook Configuration
+LINEAR_WEBHOOK_URL=your_webhook_url_here
+
+# Issue Templates
+ISSUE_TEMPLATES:
+  BUG:
+    title: "[BUG] {component}: {description}"
+    labels: ["bug", "priority-high"]
+    assignee: "auto"
+    
+  FEATURE:
+    title: "[FEATURE] {component}: {description}"
+    labels: ["enhancement", "priority-medium"]
+    assignee: "auto"
+    
+  PERFORMANCE:
+    title: "[PERFORMANCE] {component}: {description}"
+    labels: ["performance", "priority-high"]
+    assignee: "auto"
+
+# Component Mapping
+COMPONENTS:
+  ENGINE: "Trading Engine"
+  BACKEND: "Backend API"
+  FRONTEND: "Frontend"
+  RISK: "Risk Management"
+  INFRA: "Infrastructure"
+
+# Auto-assignment Rules
+ASSIGNMENT_RULES:
+  ENGINE: "engine-team"
+  BACKEND: "backend-team"
+  FRONTEND: "frontend-team"
+  RISK: "risk-team"
