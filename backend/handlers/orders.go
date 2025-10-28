@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -35,25 +36,50 @@ func SubmitOrder(engineClient *services.EngineClient, kafkaService *services.Kaf
 			}
 		}
 		
-		log.Printf("Received order request: Symbol=%s, Side=%s, Quantity=%f, Price=%f, OrderType=%s, ClientOrderID=%s", 
-			req.Symbol, req.Side, req.Quantity, req.Price, req.OrderType, req.ClientOrderID)
+	log.Printf("Received order request: Symbol=%s, Side=%s, Quantity=%f, Price=%f, OrderType=%s, ClientOrderID=%s", 
+		req.Symbol, req.Side, req.Quantity, req.Price, req.OrderType, req.ClientOrderID)
 
-		// Set default order type
-		if req.OrderType == "" {
-			req.OrderType = "LIMIT"
-		}
-		
-		// Validate price for LIMIT orders
-		if req.OrderType == "LIMIT" && req.Price <= 0 {
-			log.Printf("========================================")
-			log.Printf("LIMIT ORDER VALIDATION ERROR: Price must be greater than 0")
-			log.Printf("========================================")
-			c.JSON(400, gin.H{
-				"error": "Limit orders require a price greater than 0",
-				"message": "Please specify a valid limit price",
-			})
-			return
-		}
+	// Normalize order type to uppercase
+	if req.OrderType != "" {
+		req.OrderType = strings.ToUpper(req.OrderType)
+	}
+
+	// Set default order type if not provided
+	if req.OrderType == "" {
+		req.OrderType = "MARKET" // Changed default to MARKET for better UX
+	}
+	
+	// Validate order type
+	if req.OrderType != "MARKET" && req.OrderType != "LIMIT" && req.OrderType != "STOP" && req.OrderType != "STOP_LIMIT" {
+		log.Printf("========================================")
+		log.Printf("INVALID ORDER TYPE: %s", req.OrderType)
+		log.Printf("========================================")
+		c.JSON(400, gin.H{
+			"success": false,
+			"error":   "Invalid order type",
+			"message": fmt.Sprintf("Order type must be MARKET, LIMIT, STOP, or STOP_LIMIT (received: %s)", req.OrderType),
+		})
+		return
+	}
+	
+	// Validate price for LIMIT orders
+	if req.OrderType == "LIMIT" && req.Price <= 0 {
+		log.Printf("========================================")
+		log.Printf("LIMIT ORDER VALIDATION ERROR: Price must be greater than 0")
+		log.Printf("========================================")
+		c.JSON(400, gin.H{
+			"success": false,
+			"error":   "Limit orders require a price greater than 0",
+			"message": "Please specify a valid limit price",
+		})
+		return
+	}
+	
+	// For MARKET orders, ensure price is not required
+	if req.OrderType == "MARKET" {
+		req.Price = 0 // Ensure price is 0 for market orders
+		log.Printf("✓ Market order detected - price set to 0 (will use market price)")
+	}
 
 		// Generate order ID
 		orderID := req.ClientOrderID
