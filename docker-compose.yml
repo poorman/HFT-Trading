@@ -1,0 +1,127 @@
+version: '3.3'
+
+services:
+  # C++ Trading Engine
+  hft-engine:
+    build:
+      context: ./engine
+      dockerfile: Dockerfile
+    container_name: hft-engine
+    environment:
+      - ALPACA_API_KEY=${ALPACA_API_KEY:-}
+      - ALPACA_API_SECRET=${ALPACA_API_SECRET:-}
+      - POLYGON_API_KEY=${POLYGON_API_KEY:-your_polygon_api_key_here}
+      - TZ=America/Chicago
+      - MOVERS_STRATEGY_ENABLED=${MOVERS_STRATEGY_ENABLED:-true}
+      - MOVERS_BUY_THRESHOLD=${MOVERS_BUY_THRESHOLD:-5.0}
+      - MOVERS_SELL_THRESHOLD=${MOVERS_SELL_THRESHOLD:-4.5}
+      - MOVERS_INVESTMENT_AMOUNT=${MOVERS_INVESTMENT_AMOUNT:-1000}
+      - MOVERS_CHECK_INTERVAL=${MOVERS_CHECK_INTERVAL:-10}
+    ports:
+      - "5555:5555"
+    networks:
+      - hft-network
+      - growise_app-network
+    restart: unless-stopped
+
+  # Go Backend API
+  hft-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hft-backend
+    environment:
+      - ENGINE_ADDRESS=tcp://hft-engine:5555
+      - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@localhost:5432/hft_trading}
+      - REDIS_URL=redis://hft-redis:6379
+      - KAFKA_BROKERS=hft-kafka:9092
+      - PORT=8082
+      - TZ=America/Chicago
+    ports:
+      - "8082:8082"
+    depends_on:
+      - hft-engine
+      - hft-redis
+      - hft-kafka
+    networks:
+      - hft-network
+      - growise_app-network
+    restart: unless-stopped
+
+  # Next.js Frontend
+  hft-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hft-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=
+    ports:
+      - "3003:3000"
+    volumes:
+      # Mount source code for live updates (dev mode)
+      - ./frontend/app:/app/app
+      - ./frontend/components:/app/components
+      - ./frontend/lib:/app/lib
+      - ./frontend/public:/app/public
+      # Exclude node_modules and .next cache
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - hft-backend
+    networks:
+      - hft-network
+    restart: unless-stopped
+
+  # Redis (internal for HFT)
+  hft-redis:
+    image: redis:7-alpine
+    container_name: hft-redis
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru
+    ports:
+      - "6380:6379"
+    volumes:
+      - hft-redis-data:/data
+    networks:
+      - hft-network
+    restart: unless-stopped
+
+  # Kafka/Redpanda (internal for HFT)
+  hft-kafka:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    container_name: hft-kafka
+    command:
+      - redpanda
+      - start
+      - --smp
+      - '1'
+      - --memory
+      - '1G'
+      - --reserve-memory
+      - '0M'
+      - --overprovisioned
+      - --node-id
+      - '0'
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://hft-kafka:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    volumes:
+      - hft-kafka-data:/var/lib/redpanda/data
+    networks:
+      - hft-network
+    restart: unless-stopped
+
+volumes:
+  hft-redis-data:
+  hft-kafka-data:
+
+networks:
+  hft-network:
+    driver: bridge
+  growise_app-network:
+    external: true
+

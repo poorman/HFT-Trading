@@ -1,0 +1,28 @@
+name: System Monitoring
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'  # Every 30 minutes
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check API Health
+      run: |
+        if ! curl -f http://your-server:8082/health; then
+          echo "Health check failed!"
+          exit 1
+        fi
+    
+    - name: Send notification on failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        text: 'HFT System health check failed!'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+

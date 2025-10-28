@@ -1,0 +1,82 @@
+syntax = "proto3";
+
+package trading;
+
+option go_package = "github.com/hft/proto";
+
+// Order message for submitting new orders
+message Order {
+  string client_order_id = 1;
+  string symbol = 2;
+  string side = 3;  // "BUY" or "SELL"
+  double quantity = 4;
+  double price = 5;
+  string order_type = 6;  // "LIMIT", "MARKET", "STOP"
+  int64 timestamp = 7;  // Unix timestamp in nanoseconds
+}
+
+// Execution report for order status updates
+message ExecutionReport {
+  string order_id = 1;
+  string client_order_id = 2;
+  string symbol = 3;
+  string side = 4;
+  string status = 5;  // "NEW", "PARTIALLY_FILLED", "FILLED", "REJECTED", "CANCELED"
+  double fill_price = 6;
+  double fill_qty = 7;
+  double remaining_qty = 8;
+  int64 timestamp = 9;  // Unix timestamp in nanoseconds
+  string message = 10;  // Optional message (e.g., rejection reason)
+}
+
+// Market data tick
+message MarketData {
+  string symbol = 1;
+  double bid = 2;
+  double ask = 3;
+  double last = 4;
+  double volume = 5;
+  int64 timestamp = 6;  // Unix timestamp in nanoseconds
+}
+
+// Position information
+message Position {
+  string symbol = 1;
+  double quantity = 2;
+  double avg_price = 3;
+  double unrealized_pnl = 4;
+  double realized_pnl = 5;
+  int64 timestamp = 6;
+}
+
+// Request/Response for order submission
+message OrderRequest {
+  Order order = 1;
+}
+
+message OrderResponse {
+  bool success = 1;
+  string order_id = 2;
+  string message = 3;
+  ExecutionReport execution_report = 4;
+}
+
+// Service definitions for gRPC
+service TradingEngine {
+  rpc SubmitOrder(OrderRequest) returns (OrderResponse);
+  rpc GetPositions(PositionRequest) returns (PositionResponse);
+  rpc StreamExecutions(ExecutionStreamRequest) returns (stream ExecutionReport);
+}
+
+message PositionRequest {
+  string symbol = 1;  // Empty for all positions
+}
+
+message PositionResponse {
+  repeated Position positions = 1;
+}
+
+message ExecutionStreamRequest {
+  string client_id = 1;
+}
+
